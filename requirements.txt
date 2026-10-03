@@ -1,0 +1,10 @@
+# 由 pipreqs 生成后手工修订：
+# 1. 本机 base 环境里 charset_normalizer 装了两份（用户目录 + conda 目录，版本还不一致），
+#    pipreqs 因此输出两行重复版本号，已去重
+# 2. openpyxl / xlrd 是 pandas 按需调用的引擎，脚本没有直接 import，pipreqs 扫不到，需手动补上
+# 3. 版本号改为范围，与 README 声明的兼容范围一致（干净 venv 验证通过：pandas 3.0.6 /
+#    charset-normalizer 3.5.2 / openpyxl 3.1.5 / xlrd 2.0.2）
+pandas>=1.5
+charset-normalizer>=3.0
+openpyxl>=3.0
+xlrd>=2.0

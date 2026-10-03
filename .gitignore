@@ -1,0 +1,18 @@
+# Python 字节码缓存
+__pycache__/
+*.pyc
+
+# 虚拟环境
+venv/
+
+# 运行输出（本地生成，不入库）
+cleaned_sales_data.xlsx
+
+# 一次性自检工具，非交付物
+check_before_push.py
+
+# IDE 与系统文件
+.idea/
+.vscode/
+Thumbs.db
+Desktop.ini
