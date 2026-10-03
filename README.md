@@ -23,7 +23,7 @@
 日期、地区、产品、销售额、数量
 
 字段名不认识也没关系——脚本内置了常见别名的自动映射（见下方表格）。
-如果你的字段名不在表里，把它加进 `01_excel_marge.py` 的 `alias` 就能识别，不用改其他代码。
+如果你的字段名不在表里，把它加进 `01_excel_merge.py` 的 `alias` 就能识别，不用改其他代码。
 
 支持 `.xlsx` / `.xls` / `.csv` 混合放入，CSV 编码自动识别，无需指定。
 
@@ -68,7 +68,7 @@ pip install -r requirements.txt
 # 把待处理的销售表放进 dirty_data/ 目录
 
 # 3. 运行
-python 01_excel_marge.py
+python 01_excel_merge.py
 ```
 
 运行环境：**Python 3.9 及以上** / Windows / pandas 1.5 及以上
@@ -119,7 +119,7 @@ python 01_excel_marge.py
 01_excel_marge/
 ├── README.md
 ├── requirements.txt        # 依赖清单（pipreqs 生成）
-├── 01_excel_marge.py       # 主脚本
+├── 01_excel_merge.py       # 主脚本
 ├── cleaned_sales_data.xlsx # 输出结果（本地生成，不入库）
 ├── dirty_data/             # 输入目录（放待处理的销售表）
 └── docs/
@@ -130,7 +130,7 @@ python 01_excel_marge.py
 
 ## 已知限制
 
-- 字段别名表在 `01_excel_marge.py` 的 `alias` 中手工维护，遇到新的字段写法需补充进去
+- 字段别名表在 `01_excel_merge.py` 的 `alias` 中手工维护，遇到新的字段写法需补充进去
 - 输出文件名固定为 `cleaned_sales_data.xlsx`，每次运行覆盖上一次结果
 - 不支持带合并单元格表头的 Excel
 - CSV 编码由 charset-normalizer 自动检测，极特殊情况可能误判——误判时该文件会显式报「读取失败」并列出文件名，不会静默读错
