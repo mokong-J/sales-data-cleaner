@@ -16,14 +16,15 @@ from charset_normalizer import from_path
 
 def norm(s):
     """
-    标准化字段名称：去首尾空格、移除空格/下划线/短横线、删除括号及括号内内容
-    例：「金额(元)」->「金额」、「华东（大区）」->「华东」
+    标准化字段名称：去首尾空格、移除空格/下划线/短横线、删除括号及括号内内容、转小写
+    例：「金额(元)」->「金额」、「华东（大区）」->「华东」；转小写让列名匹配不区分大小写
     :param s: 输入字符串
     :return: 标准化后的字符串
     """
     s = s.strip()
     s = re.sub(r"[\s_-]", "", s)
     s = re.sub(r"[（(].*?[)）]", "", s)
+    s = s.lower()
     return s
 
 
@@ -113,7 +114,7 @@ for file_path in [*file_dir.glob("*.xls*"), *file_dir.glob("*.csv")]:
             encoding = from_path(file_path).best().encoding
             df = pd.read_csv(file_path, encoding=encoding)
         else:
-            df = pd.read_excel(file_path)
+            df = pd.read_excel(file_path, engine="calamine")
     except Exception as e:
         print(f"错误：{file_path} 读取失败，错误信息：{e}")
         failed_files.append(file_path.name)
@@ -195,7 +196,13 @@ marge_df["Quantity"] = marge_df["Quantity"].astype("Int64")
 # 地区/产品标准化：去空格与括号注记，让「华东（大区）」并入「华东」
 # 放在去重之前，归一化后相同的行也能被一并判重
 for col in ["Region", "Product"]:
-    marge_df[col] = marge_df[col].apply(norm)
+    marge_df[col] = (
+        marge_df[col]
+        .astype(str)
+        .str.strip()
+        .str.replace(r"[\s_-]", "", regex=True)
+        .str.replace(r"[（(].*?[)）]", "", regex=True)
+    )
 
 # 去重：所有标准字段都相同才算重复，保留第一条
 marge_df = marge_df.drop_duplicates(subset=std_cols, keep="first")
@@ -247,13 +254,11 @@ pivot = pivot.reset_index()
 # 明细日期转成 YYYY-MM-DD 字符串，客户在 Excel 里可直接排序和筛选
 marge_df["Date"] = marge_df["Date"].dt.strftime("%Y-%m-%d")
 try:
-    marge_df.to_excel("cleaned_sales_data.xlsx", sheet_name="明细", index=False)
     with pd.ExcelWriter(
         "cleaned_sales_data.xlsx",
-        mode="a",
-        engine="openpyxl",
-        if_sheet_exists="replace",
+        engine="xlsxwriter",
     ) as writer:
+        marge_df.to_excel(writer, sheet_name="明细", index=False)
         pivot.to_excel(writer, sheet_name="销售额透视表", index=False)
 except PermissionError:
     sys.exit("写入失败： cleaned_sales_data.xlsx 被占用，请关闭 Excel 后重新运行")
