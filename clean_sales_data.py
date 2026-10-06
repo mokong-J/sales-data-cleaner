@@ -140,7 +140,7 @@ for file_path in [*file_dir.glob("*.xls*"), *file_dir.glob("*.csv")]:
     # 字段缺失明说但不中断：缺的标准列由 reindex 补 NaN，后续统一按缺失行剔除
     missing_cols = [col for col in std_cols if col not in df.columns]
     if missing_cols:
-        print(f"警告：{file_path.name} 缺少字段：{",".join(missing_cols)}")
+        print(f"警告：{file_path.name} 缺少字段：{','.join(missing_cols)}")
 
     # reindex：只保留 5 个标准字段（多余列丢弃、缺失列补 NaN）
     df = df.reindex(columns=std_cols)
@@ -152,19 +152,19 @@ if not df_list:
     sys.exit("没有成功获取文件，终止处理")
 
 # 一次性拼接并重置索引，避免行号重复
-marge_df = pd.concat(df_list, ignore_index=True)
-total_rows_marge = marge_df.shape[0]
+merge_df = pd.concat(df_list, ignore_index=True)
+total_rows_merge = merge_df.shape[0]
 print(
-    f"成功合并 {files_count} 个文件，共 {total_rows_marge} 行数据, 读取失败 {len(failed_files)} 个文件"
+    f"成功合并 {files_count} 个文件，共 {total_rows_merge} 行数据, 读取失败 {len(failed_files)} 个文件"
 )
 
 if failed_files:
-    print(f"读取失败文件清单：{",".join(failed_files)}")
+    print(f"读取失败文件清单：{','.join(failed_files)}")
 
 # 日期格式统一化：先把「年 / 月 / . / /」替换为「-」并去掉「日」，
 # 再按固定格式解析，解析失败的置为 NaT（不中断，数量计入质量报告）
-marge_df["Date"] = pd.to_datetime(
-    marge_df["Date"]
+merge_df["Date"] = pd.to_datetime(
+    merge_df["Date"]
     .astype(str)
     .str.strip()
     .str.replace(r"[年月./]", "-", regex=True)
@@ -172,32 +172,32 @@ marge_df["Date"] = pd.to_datetime(
     errors="coerce",
     format="%Y-%m-%d",
 )
-date_bad_rows = int(marge_df["Date"].isna().sum())
+date_bad_rows = int(merge_df["Date"].isna().sum())
 print(f"日期格式统一化：共 {date_bad_rows} 个日期格式错误")
 
 # 数值列清洗：混入的「暂无 / - / N/A」等文本统一转为 NaN
 for col in ["Amount", "Quantity"]:
-    marge_df[col] = pd.to_numeric(marge_df[col], errors="coerce")
-amount_bad_rows = int(marge_df["Amount"].isna().sum())
-quantity_bad_rows = int(marge_df["Quantity"].isna().sum())
+    merge_df[col] = pd.to_numeric(merge_df[col], errors="coerce")
+amount_bad_rows = int(merge_df["Amount"].isna().sum())
+quantity_bad_rows = int(merge_df["Quantity"].isna().sum())
 print(f"Amount 有 {amount_bad_rows} 行无法解析为数字")
 print(f"Quantity 有 {quantity_bad_rows} 行无法解析为数字")
 
 # 只剔除关键字段缺失的行（任一标准列缺失即剔除），不做全表 dropna
-rows_before_dropna = marge_df.shape[0]
-marge_df = marge_df.dropna(subset=std_cols)
-rows_after_dropna = marge_df.shape[0]
+rows_before_dropna = merge_df.shape[0]
+merge_df = merge_df.dropna(subset=std_cols)
+rows_after_dropna = merge_df.shape[0]
 dropna_rows = rows_before_dropna - rows_after_dropna
 print(f"删除缺失值：共 {dropna_rows} 行缺失值(任意列存在缺失值的行)")
 
 # 数量列用可空整数类型，避免输出成 17.0；缺失行已剔除，此处转换不会失败
-marge_df["Quantity"] = marge_df["Quantity"].astype("Int64")
+merge_df["Quantity"] = merge_df["Quantity"].astype("Int64")
 
 # 地区/产品标准化：去空格与括号注记，让「华东（大区）」并入「华东」
 # 放在去重之前，归一化后相同的行也能被一并判重
 for col in ["Region", "Product"]:
-    marge_df[col] = (
-        marge_df[col]
+    merge_df[col] = (
+        merge_df[col]
         .astype(str)
         .str.strip()
         .str.replace(r"[\s_-]", "", regex=True)
@@ -205,8 +205,8 @@ for col in ["Region", "Product"]:
     )
 
 # 去重：所有标准字段都相同才算重复，保留第一条
-marge_df = marge_df.drop_duplicates(subset=std_cols, keep="first")
-rows_after_drop_dup = marge_df.shape[0]
+merge_df = merge_df.drop_duplicates(subset=std_cols, keep="first")
+rows_after_drop_dup = merge_df.shape[0]
 rows_drop_dup = rows_after_dropna - rows_after_drop_dup
 print(f"去重：共 {rows_drop_dup} 行重复数据")
 
@@ -243,8 +243,8 @@ report_path.parent.mkdir(parents=True, exist_ok=True)
 report_path.write_text(report, encoding="utf-8-sig")
 
 # 透视表：月份 x 地区 的销售额汇总（日期先转 Period 再透视）
-pivot = marge_df.pivot_table(
-    index=marge_df["Date"].dt.to_period("M"),
+pivot = merge_df.pivot_table(
+    index=merge_df["Date"].dt.to_period("M"),
     columns="Region",
     values="Amount",
     aggfunc="sum",
@@ -252,18 +252,18 @@ pivot = marge_df.pivot_table(
 pivot = pivot.reset_index()
 
 # 明细日期转成 YYYY-MM-DD 字符串，客户在 Excel 里可直接排序和筛选
-marge_df["Date"] = marge_df["Date"].dt.strftime("%Y-%m-%d")
+merge_df["Date"] = merge_df["Date"].dt.strftime("%Y-%m-%d")
 try:
     with pd.ExcelWriter(
         "cleaned_sales_data.xlsx",
         engine="xlsxwriter",
     ) as writer:
-        marge_df.to_excel(writer, sheet_name="明细", index=False)
+        merge_df.to_excel(writer, sheet_name="明细", index=False)
         pivot.to_excel(writer, sheet_name="销售额透视表", index=False)
 except PermissionError:
     sys.exit("写入失败： cleaned_sales_data.xlsx 被占用，请关闭 Excel 后重新运行")
 print(
-    f"已输出 cleaned_sales_data.xlsx（明细 {marge_df.shape[0]} 行 + 销售额透视表），"
+    f"已输出 cleaned_sales_data.xlsx（明细 {merge_df.shape[0]} 行 + 销售额透视表），"
     f"数据质量报告已写入 docs/{report_path.name}"
 )
 end_time = time.time()

@@ -23,7 +23,7 @@
 日期、地区、产品、销售额、数量
 
 字段名不认识也没关系——脚本内置了常见别名的自动映射（见下方表格）。
-如果你的字段名不在表里，把它加进 `01_excel_merge.py` 的 `alias` 就能识别，不用改其他代码。
+如果你的字段名不在表里，把它加进 `clean_sales_data.py` 的 `alias` 就能识别，不用改其他代码。
 
 支持 `.xlsx` / `.xls` / `.csv` 混合放入，CSV 编码自动识别，无需指定。
 
@@ -68,11 +68,11 @@ pip install -r requirements.txt
 # 把待处理的销售表放进 dirty_data/ 目录
 
 # 3. 运行
-python 01_excel_merge.py
+python clean_sales_data.py
 ```
 
-运行环境：**Python 3.9 及以上** / Windows / pandas 1.5 及以上
-（本机实测环境：Python 3.14.8 + pandas 3.0.6 + openpyxl 3.1.5 + charset-normalizer 3.5.1 + xlrd 2.0.2；读取老式 `.xls` 依赖 xlrd）
+运行环境：**Python 3.9 及以上** / Windows / pandas 2.2 及以上（calamine 引擎参数要求）
+（本机实测环境：Python 3.14.8 + pandas 3.0.6 + python-calamine 0.8.2 + xlsxwriter 3.2.9 + charset-normalizer 3.5.1；读取 .xls/.xlsx 由 calamine 处理）
 
 运行过程中会逐步打印：空文件与损坏文件的跳过情况、日期解析失败数、金额/数量无法解析的行数、缺失剔除与去重数量，最后打印完整的数据质量报告——每一步丢了多少数据全程可见。个别损坏文件会被自动跳过并在结束时汇总，不会中断整批处理。
 
@@ -119,7 +119,7 @@ python 01_excel_merge.py
 01_excel_marge/
 ├── README.md
 ├── requirements.txt        # 依赖清单（pipreqs 生成）
-├── 01_excel_merge.py       # 主脚本
+├── clean_sales_data.py       # 主脚本
 ├── cleaned_sales_data.xlsx # 输出结果（本地生成，不入库）
 ├── dirty_data/             # 输入目录（放待处理的销售表）
 └── docs/
@@ -130,7 +130,7 @@ python 01_excel_merge.py
 
 ## 已知限制
 
-- 字段别名表在 `01_excel_merge.py` 的 `alias` 中手工维护，遇到新的字段写法需补充进去
+- 字段别名表在 `clean_sales_data.py` 的 `alias` 中手工维护，遇到新的字段写法需补充进去
 - 输出文件名固定为 `cleaned_sales_data.xlsx`，每次运行覆盖上一次结果
 - 不支持带合并单元格表头的 Excel
 - CSV 编码由 charset-normalizer 自动检测，极特殊情况可能误判——误判时该文件会显式报「读取失败」并列出文件名，不会静默读错
@@ -141,7 +141,7 @@ python 01_excel_merge.py
 有类似的数据处理需求，或想让我按你的表格格式定制，欢迎联系：
 
 - 📮 邮箱：1182618567@qq.com
-- 💬 微信：wxid_0643366417512
+- 💬 微信：wx_mokong-J
 
 **我还能帮你做**
 - 📊 多份 Excel 合并 / 清洗 / 透视分析

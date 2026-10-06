@@ -7,6 +7,7 @@ venv/
 
 # 运行输出（本地生成，不入库）
 cleaned_sales_data.xlsx
+~$*
 
 # 一次性自检工具，非交付物
 check_before_push.py
@@ -16,3 +17,7 @@ check_before_push.py
 .vscode/
 Thumbs.db
 Desktop.ini
+docs/文章1-初稿.md
+docs/文章1-修订版.md
+docs/文章1-初稿.assets/
+docs/多源销售数据合并清洗方案.md
